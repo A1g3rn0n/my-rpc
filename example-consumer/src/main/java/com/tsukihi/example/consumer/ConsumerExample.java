@@ -35,7 +35,7 @@ public class ConsumerExample {
 
         // todo short类型方法 返回值赋值给short型变量 为什么会发生类型转换错误。
         //  long也会 double也会 但是方法返回类型和变量类型都是int就不会
-        short number = userService.getNumber();
-        System.out.println(number);
+//        short number = userService.getNumber();
+//        System.out.println(number);
     }
 }

@@ -1,4 +1,4 @@
-JDK=com.tsukihi.myrpc.serializer.JdkSerializer
+jdk=com.tsukihi.myrpc.serializer.JdkSerializer
 hessian=com.tsukihi.myrpc.serializer.HessianSerializer
 kryo=com.tsukihi.myrpc.serializer.KryoSerializer
 json=com.tsukihi.myrpc.serializer.JsonSerializer

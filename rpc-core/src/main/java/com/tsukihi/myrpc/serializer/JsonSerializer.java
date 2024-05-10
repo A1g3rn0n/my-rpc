@@ -5,6 +5,7 @@ import com.tsukihi.myrpc.model.RpcRequest;
 import com.tsukihi.myrpc.model.RpcResponse;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 /**
  * JSON序列化器
@@ -66,8 +67,8 @@ public class JsonSerializer implements Serializer{
     private <T> T handleResponse(RpcResponse rpcResponse, Class<T> type) throws IOException {
         // 处理响应数据
         byte[] dataBytes = OBJECT_MAPPER.writeValueAsBytes(rpcResponse.getData());
-        rpcResponse.setData(OBJECT_MAPPER.readValue(dataBytes, rpcResponse.getData().getClass()));
+        rpcResponse.setData(OBJECT_MAPPER.readValue(dataBytes, rpcResponse.getDataType()));
+
         return type.cast(rpcResponse);
     }
-
 }
