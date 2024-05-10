@@ -41,12 +41,7 @@ public class ConfigUtils {
             configFileBuilder.append("-").append(environment);
         }
 
-        // 只读取 properties 文件
-//        configFileBuilder.append(".properties");
-//        Props props = new Props(configFileBuilder.toString());
-//        return props.toBean(tClass, prefix);
-
-        String[] extensions = {".properties", ".yaml", ".yml"};
+        String[] extensions = {".properties", ".yaml",".yml"};
 
         for (String extension : extensions) {
             String fileName = configFileBuilder.toString() + extension;
@@ -55,7 +50,8 @@ public class ConfigUtils {
                     Props props = new Props(fileName);
                     return props.toBean(tClass, prefix);
                 } else {
-                    return loadYamlConfig(tClass, fileName);
+                    T res = loadYamlConfig(tClass, fileName, prefix);
+                    return res;
                 }
             }
         }
@@ -67,26 +63,32 @@ public class ConfigUtils {
         return ConfigUtils.class.getClassLoader().getResource(fileName) != null;
     }
 
-    public static <T> T loadYamlConfig(Class<T> tClass, String fileName) {
+    public static <T> T loadYamlConfig(Class<T> tClass, String fileName, String prefix) {
         Yaml yaml = new Yaml();
         InputStream inputStream = ConfigUtils.class
                 .getClassLoader()
                 .getResourceAsStream(fileName);
         Map<String, Object> obj = yaml.load(inputStream);
+        Map<String, Object> subMap = (Map<String, Object>) obj.get(prefix);
+        if (subMap == null) {
+            throw new RuntimeException("Prefix " + prefix + " not found in map");
+        }
         // 将Map转换为你的配置类
         // 这里需要你的配置类有对应的setter方法
-        return mapToBean(obj, tClass);
+        return mapToBean(subMap, tClass);
     }
 
     public static <T> T mapToBean(Map<String, Object> map, Class<T> tclass){
         try{
             T instance = tclass.newInstance();
+
             for(Map.Entry<String, Object> entry : map.entrySet()){
                 String key = entry.getKey();
                 Object value = entry.getValue();
 
                 Field field = tclass.getDeclaredField(key);
                 field.setAccessible(true);
+
                 field.set(instance, value);
             }
 

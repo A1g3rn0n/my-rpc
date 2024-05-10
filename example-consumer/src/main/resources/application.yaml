@@ -1,0 +1,8 @@
+#rpc:
+#  name: "yamltest"
+#  version: "1.1"
+#  serverPort: 8089
+#  mock: true
+#  serializer: "json"
+
+

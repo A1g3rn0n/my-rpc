@@ -1,5 +1,6 @@
 package com.tsukihi.myrpc.config;
 
+import com.tsukihi.myrpc.serializer.SerializerKeys;
 import lombok.Data;
 /**
  * Rpc框架配置
@@ -26,4 +27,14 @@ public class RpcConfig {
      * 服务器端口
      */
     private int serverPort = 8080;
+
+    /**
+     * 模拟调用
+     */
+    private boolean mock = false;
+
+    /**
+     * 序列化器
+     */
+    private String serializer = SerializerKeys.JDK;
 }
