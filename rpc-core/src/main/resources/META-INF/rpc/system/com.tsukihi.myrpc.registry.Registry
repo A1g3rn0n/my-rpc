@@ -1,0 +1,2 @@
+etcd=com.tsukihi.myrpc.registry.EtcdRegistry
+zookeeper=com.tsukihi.myrpc.registry.ZooKeeperRegistry

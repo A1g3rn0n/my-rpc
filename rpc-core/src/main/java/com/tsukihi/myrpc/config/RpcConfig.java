@@ -3,7 +3,7 @@ package com.tsukihi.myrpc.config;
 import com.tsukihi.myrpc.serializer.SerializerKeys;
 import lombok.Data;
 /**
- * Rpc框架配置
+ * Rpc框架全局配置
  */
 @Data
 public class RpcConfig {
@@ -37,4 +37,9 @@ public class RpcConfig {
      * 序列化器
      */
     private String serializer = SerializerKeys.JDK;
+
+    /**
+     * 注册中心配置
+     */
+    private RegistryConfig registryConfig = new RegistryConfig();
 }

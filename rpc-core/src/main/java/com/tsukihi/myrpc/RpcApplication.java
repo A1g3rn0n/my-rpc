@@ -1,5 +1,8 @@
 package com.tsukihi.myrpc;
+import com.tsukihi.myrpc.config.RegistryConfig;
 import com.tsukihi.myrpc.constant.RpcConstant;
+import com.tsukihi.myrpc.registry.Registry;
+import com.tsukihi.myrpc.registry.RegistryFactory;
 import com.tsukihi.myrpc.utils.ConfigUtils;
 import com.tsukihi.myrpc.config.RpcConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,18 @@ public class RpcApplication {
     public static void init(RpcConfig newRpcConfig) {
         rpcConfig = newRpcConfig;
         log.info("rpc init, config = {}", newRpcConfig.toString());
+
+        // 注册中心初始化
+        RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
+        Registry registry = RegistryFactory.getInstance(registryConfig.getRegistry());
+        registry.init(registryConfig);
+        log.info("registry init, config = {}", registryConfig);
+
+        // 创建并注册Shutdown Hook, JVM关闭前释放资源
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("Shutdown Hook was invoked. Shutting down...");
+            registry.destroy();
+        }));
     }
 
     /**

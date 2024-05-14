@@ -103,7 +103,13 @@ public class SpiLoader {
     }
 
     /**
-     * 加载某个类型
+     * 加载某个接口，配置resources路径文件里（名字 = 类路径）的实现类，放入loaderMap
+     * (接口类名 ->(自定义的实现类 名称 , 实现类路径))
+     * 在XX工厂类中调用，就会加载XX接口的实现类，
+     * 然后定义方法getInstance，传入 自定义的实现类 名称 也就是key ，返回实现类的实例
+     *
+     * @param loadClass 加载的类
+     * @return keyClassMap
      */
     public static Map<String, Class<?>> load(Class<?> loadClass){
         log.info("加载类型为 {} 的SPI", loadClass.getName());

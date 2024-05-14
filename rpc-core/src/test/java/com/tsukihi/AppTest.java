@@ -1,5 +1,6 @@
 package com.tsukihi;
 
+import com.tsukihi.myrpc.registry.RegistryTest;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -35,4 +36,26 @@ public class AppTest
     {
         assertTrue( true );
     }
+
+    RegistryTest registryTest = new RegistryTest();
+
+    public void testRegistry() throws Exception {
+        registryTest.init();
+        registryTest.register();
+        registryTest.unRegister();
+        registryTest.serviceDiscovery();
+        registryTest.heartbeat();
+    }
+
+
+
+//    public void testUnRegister() {
+//        registryTest.unRegister();
+//    }
+//
+//    public void testServiceDiscovery() {
+//        registryTest.serviceDiscovery();
+//    }
+//
+
 }

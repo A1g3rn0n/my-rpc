@@ -11,6 +11,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpServerRequest;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -18,6 +19,7 @@ import java.lang.reflect.Method;
 /**
  * HTTP 请求处理
  */
+@Slf4j
 public class HttpServerHandler implements Handler<HttpServerRequest> {
 
     @Override
@@ -26,7 +28,7 @@ public class HttpServerHandler implements Handler<HttpServerRequest> {
         final Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
 
         // 记录日志
-        System.out.println("Received request: " + request.method() + " " + request.uri());
+        log.info(String.format("Received request: %s %s", request.method(), request.uri()));
 
         // 异步处理Http请求
         request.bodyHandler(body -> {

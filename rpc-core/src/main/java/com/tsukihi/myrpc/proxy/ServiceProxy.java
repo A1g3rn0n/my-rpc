@@ -1,18 +1,26 @@
 package com.tsukihi.myrpc.proxy;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.tsukihi.myrpc.RpcApplication;
 import com.tsukihi.myrpc.config.RpcConfig;
+import com.tsukihi.myrpc.constant.RpcConstant;
 import com.tsukihi.myrpc.model.RpcRequest;
 import com.tsukihi.myrpc.model.RpcResponse;
+import com.tsukihi.myrpc.model.ServiceMetaInfo;
+import com.tsukihi.myrpc.registry.Registry;
+import com.tsukihi.myrpc.registry.RegistryFactory;
 import com.tsukihi.myrpc.serializer.JdkSerializer;
 import com.tsukihi.myrpc.serializer.Serializer;
 import com.tsukihi.myrpc.serializer.SerializerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * 服务代理（JDK动态代理）
@@ -26,7 +34,9 @@ import java.lang.reflect.Method;
  * 创建一个代理对象，这个代理对象的行为是由 ServiceProxy 对象定义的。
  *
  */
+@Slf4j
 public class ServiceProxy implements InvocationHandler {
+
 
     /**
      * 调用代理
@@ -36,13 +46,11 @@ public class ServiceProxy implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // 指定序列化器
-//        Serializer serializer = new JdkSerializer();
         Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
 
-        // debug
-        System.out.println("ServiceProxy.java Output: method :" + method.getName());
-//        System.out.println("ServiceProxy.java Output: returnType :" + method.getReturnType());
+        log.info("method invoke: {}" , method.getName());
+
+        String serviceName = method.getDeclaringClass().getName();
         // 构造请求
         RpcRequest rpcRequest = RpcRequest.builder()
                 .serviceName(method.getDeclaringClass().getName())
@@ -54,9 +62,24 @@ public class ServiceProxy implements InvocationHandler {
             // 序列化
             byte[] bodyBytes = serializer.serialize(rpcRequest);
 
+            // 从注册中心获取服务提供者地址
+            RpcConfig rpcConfig = RpcApplication.getRpcConfig();
+            Registry registry = RegistryFactory.getInstance(rpcConfig.getRegistryConfig().getRegistry());
+            ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
+            serviceMetaInfo.setServiceName(serviceName);
+            serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
+
+            List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
+            if(CollUtil.isEmpty(serviceMetaInfoList)){
+                throw new RuntimeException("暂无服务地址");
+            }
+            log.info("serviceMetaInfoList: {}" , serviceMetaInfoList.toString());
+
+            // 暂时先取第一个
+            ServiceMetaInfo selectedServiceMetaInfo = serviceMetaInfoList.get(0);
+
             // 发送请求
-            // todo 注意 这里地址被硬编码了， 需要使用注册中心和服务发现解决
-            try(HttpResponse httpResponse = HttpRequest.post("http://localhost:8080/")
+            try(HttpResponse httpResponse = HttpRequest.post(selectedServiceMetaInfo.getServiceAddress())
                     .body(bodyBytes)
                     .execute()) {
                 // 获取结果

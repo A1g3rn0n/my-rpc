@@ -5,12 +5,14 @@ import com.tsukihi.example.common.service.UserService;
 import com.tsukihi.myrpc.config.RpcConfig;
 import com.tsukihi.myrpc.proxy.ServiceProxyFactory;
 import com.tsukihi.myrpc.utils.ConfigUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 
 /**
  * 简单的消费者示例
  */
+@Slf4j
 public class ConsumerExample {
 
     public static void main(String[] args) {
@@ -21,21 +23,22 @@ public class ConsumerExample {
 
         UserService userService = ServiceProxyFactory.getProxy(UserService.class);
         User user = new User();
-        user.setName("Algernon");
+        user.setName("ababa");
 
 
         // 调用
         User newUser = userService.getUser(user);
         if (newUser != null) {
-            System.out.printf("ConsumerExample.java OutPut user.getName(): {%s}", newUser.getName());
-            System.out.println();
+            log.info(String.format("user.getName(): {%s}", newUser.getName()));
         } else {
-            System.out.println("user == null");
+            log.info(String.format("user.getName(): {%s}", (Object) null));
         }
 
-        // todo short类型方法 返回值赋值给short型变量 为什么会发生类型转换错误。
-        //  long也会 double也会 但是方法返回类型和变量类型都是int就不会
-//        short number = userService.getNumber();
-//        System.out.println(number);
+
+        short number = userService.getNumber();
+        log.info(String.format("number: {%d}", number));
+
+        short number2 = userService.getNumber();
+        log.info(String.format("number2: {%d}", number2));
     }
 }
