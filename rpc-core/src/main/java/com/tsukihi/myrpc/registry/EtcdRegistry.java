@@ -104,7 +104,9 @@ public class EtcdRegistry implements Registry{
     public void register(ServiceMetaInfo serviceMetaInfo) throws Exception {
         // 生成时间属性
         DateTime dateTime = DateTime.now();
-        serviceMetaInfo.setRegisterTime(dateTime.toString("yyyy-MM-dd HH:mm:ss"));
+        if(serviceMetaInfo.getRegisterTime() == null)
+            serviceMetaInfo.setRegisterTime(dateTime.toString("yyyy-MM-dd HH:mm:ss"));
+        serviceMetaInfo.setLatestRenewalTime(dateTime.toString("yyyy-MM-dd HH:mm:ss"));
 
         // 创建Lease 和KV客户端
         Lease leaseClient  = client.getLeaseClient();

@@ -30,9 +30,14 @@ public class ServiceMetaInfo {
     private Integer servicePort;
 
     /**
-     * 上线时间
+     * 服务首次注册到注册中心的时间
      */
     private String registerTime;
+
+    /**
+     * 最近一次在注册中心续期的时间
+     */
+    private String latestRenewalTime;
 
     /**
      * 服务分组（暂未实现）
