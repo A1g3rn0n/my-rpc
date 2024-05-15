@@ -12,6 +12,7 @@ import com.tsukihi.myrpc.registry.Registry;
 import com.tsukihi.myrpc.registry.RegistryFactory;
 import com.tsukihi.myrpc.server.HttpServer;
 import com.tsukihi.myrpc.server.VertxHttpServer;
+import com.tsukihi.myrpc.server.tcp.VertxTcpServer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -48,7 +49,11 @@ public class ProviderExample {
 
 
             // 启动web服务
-            HttpServer httpServer = new VertxHttpServer();
-            httpServer.doStart(RpcApplication.getRpcConfig().getServerPort());
+//            HttpServer httpServer = new VertxHttpServer();
+//            httpServer.doStart(RpcApplication.getRpcConfig().getServerPort());
+
+            // 启动TCP服务
+            VertxTcpServer vertxTcpServer = new VertxTcpServer();
+            vertxTcpServer.doStart(8080);
         }
 }

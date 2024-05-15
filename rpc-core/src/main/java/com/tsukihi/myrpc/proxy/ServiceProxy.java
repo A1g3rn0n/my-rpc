@@ -1,6 +1,7 @@
 package com.tsukihi.myrpc.proxy;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.tsukihi.myrpc.RpcApplication;
@@ -9,11 +10,16 @@ import com.tsukihi.myrpc.constant.RpcConstant;
 import com.tsukihi.myrpc.model.RpcRequest;
 import com.tsukihi.myrpc.model.RpcResponse;
 import com.tsukihi.myrpc.model.ServiceMetaInfo;
+import com.tsukihi.myrpc.protocol.*;
 import com.tsukihi.myrpc.registry.Registry;
 import com.tsukihi.myrpc.registry.RegistryFactory;
 import com.tsukihi.myrpc.serializer.JdkSerializer;
 import com.tsukihi.myrpc.serializer.Serializer;
 import com.tsukihi.myrpc.serializer.SerializerFactory;
+import com.tsukihi.myrpc.server.tcp.VertxTcpClient;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.NetClient;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -21,9 +27,11 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 服务代理（JDK动态代理）
+ * 服务消费者通过代理发送请求
  *
  * 动态代理则是在运行时动态生成代理类。
  * 动态代理不需要为每一个被代理的类都写一个对应的代理类，
@@ -46,22 +54,19 @@ public class ServiceProxy implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
+        final Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
 
         log.info("method invoke: {}" , method.getName());
 
         String serviceName = method.getDeclaringClass().getName();
         // 构造请求
         RpcRequest rpcRequest = RpcRequest.builder()
-                .serviceName(method.getDeclaringClass().getName())
+                .serviceName(serviceName)
                 .methodName(method.getName())
                 .parameterTypes(method.getParameterTypes())
                 .args(args)
                 .build();
         try{
-            // 序列化
-            byte[] bodyBytes = serializer.serialize(rpcRequest);
-
             // 从注册中心获取服务提供者地址
             RpcConfig rpcConfig = RpcApplication.getRpcConfig();
             Registry registry = RegistryFactory.getInstance(rpcConfig.getRegistryConfig().getRegistry());
@@ -73,25 +78,29 @@ public class ServiceProxy implements InvocationHandler {
             if(CollUtil.isEmpty(serviceMetaInfoList)){
                 throw new RuntimeException("暂无服务地址");
             }
-            log.info("serviceMetaInfoList: {}" , serviceMetaInfoList.toString());
 
             // 暂时先取第一个
             ServiceMetaInfo selectedServiceMetaInfo = serviceMetaInfoList.get(0);
 
-            // 发送请求
-            try(HttpResponse httpResponse = HttpRequest.post(selectedServiceMetaInfo.getServiceAddress())
-                    .body(bodyBytes)
-                    .execute()) {
-                // 获取结果
-                byte[] result = httpResponse.bodyBytes();
-                // 反序列化结果
-                RpcResponse rpcResponse = serializer.deserialize(result, RpcResponse.class);
-                return rpcResponse.getData();
-            }
-        } catch (IOException e) {
+            // 发送TCP请求
+            // http
+//            byte[] bodyBytes = serializer.serialize(rpcRequest);
+//            try (HttpResponse httpResponse = HttpRequest.post(selectedServiceMetaInfo.getServiceAddress())
+//                    .body(bodyBytes)
+//                    .execute()) {
+//                byte[] result = httpResponse.bodyBytes();
+//                // 反序列化
+//                RpcResponse rpcResponse = serializer.deserialize(result, RpcResponse.class);
+//                return rpcResponse.getData();
+//            }
+
+            // tcp
+            RpcResponse rpcResponse = VertxTcpClient.doRequest(rpcRequest, selectedServiceMetaInfo);
+            return rpcResponse.getData();
+        } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException("调用失败");
         }
 
-        return null;
     }
 }

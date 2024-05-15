@@ -59,7 +59,7 @@ public class HttpServerHandler implements Handler<HttpServerRequest> {
                 // 封装返回结果
                 rpcResponse.setData(result);
                 rpcResponse.setDataType(method.getReturnType());
-                rpcResponse.setMessage("OK");
+                rpcResponse.setMessage("ok");
             }catch (Exception e){
                 e.printStackTrace();
                 rpcResponse.setMessage(e.getMessage());
@@ -80,8 +80,8 @@ public class HttpServerHandler implements Handler<HttpServerRequest> {
 
         try{
             // 序列化
-            byte[] serializerd = serializer.serialize(rpcResponse);
-            httpServerResponse.end(Buffer.buffer(serializerd));
+            byte[] serialized = serializer.serialize(rpcResponse);
+            httpServerResponse.end(Buffer.buffer(serialized));
         }catch (IOException e){
             e.printStackTrace();
             httpServerResponse.end(Buffer.buffer());
