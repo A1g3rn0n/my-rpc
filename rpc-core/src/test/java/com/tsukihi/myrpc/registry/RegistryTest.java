@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * 注册中心测试
  */
+
 public class RegistryTest {
 
     final Registry registry = new EtcdRegistry();

@@ -1,6 +1,7 @@
 package com.tsukihi.myrpc.spi;
 
 import cn.hutool.core.io.resource.ResourceUtil;
+import com.tsukihi.myrpc.fault.retry.RetryStrategy;
 import com.tsukihi.myrpc.serializer.Serializer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,7 +57,7 @@ public class SpiLoader {
     /**
      * 动态加载的类列表
      */
-    private static final List<Class<?>> LOAD_CLASS_LIST = Arrays.asList(Serializer.class);
+    private static final List<Class<?>> LOAD_CLASS_LIST = Arrays.asList(Serializer.class, RetryStrategy.class);
 
     /**
      * 加载所有类型
@@ -137,6 +138,7 @@ public class SpiLoader {
                 }
             }
         }
+        log.info("已加载 {}", keyClassMap.toString());
         loaderMap.put(loadClass.getName(), keyClassMap);
         return keyClassMap;
     }
@@ -144,8 +146,10 @@ public class SpiLoader {
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         loadAll();
         System.out.println(loaderMap);
-        Serializer serializer = getInstance(Serializer.class, "kryo");
-        System.out.println(serializer);
+//        Serializer serializer = getInstance(Serializer.class, "kryo");
+//        System.out.println(serializer);
+        RetryStrategy retryStrategy = getInstance(RetryStrategy.class, "fixedInterval");
+        System.out.println(retryStrategy);
     }
 
 }

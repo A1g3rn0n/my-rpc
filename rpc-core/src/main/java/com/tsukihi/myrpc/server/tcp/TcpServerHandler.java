@@ -10,13 +10,16 @@ import com.tsukihi.myrpc.registry.LocalRegistry;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 /**
  * 服务提供者的请求处理器
  */
+@Slf4j
 public class TcpServerHandler implements Handler<NetSocket> {
 
     /**
@@ -27,6 +30,8 @@ public class TcpServerHandler implements Handler<NetSocket> {
      */
     @Override
     public void handle(NetSocket socket) {
+        String connectionId = UUID.randomUUID().toString();
+        log.info("连接到这里的客户端ip {}, {}", connectionId , socket.remoteAddress().hostAddress());
         // 处理连接
         TcpBufferHandlerWrapper bufferHandlerWrapper = new TcpBufferHandlerWrapper(buffer -> {
             // 接受请求，解码
@@ -44,6 +49,7 @@ public class TcpServerHandler implements Handler<NetSocket> {
             RpcResponse rpcResponse = new RpcResponse();
             try{
                 // 获取要调用的服务实现类，通过反射调用
+                // todo 学习一下这里的实现
                 Class<?> implClass = LocalRegistry.get(rpcRequest.getServiceName());
                 Method method = implClass.getMethod(rpcRequest.getMethodName(), rpcRequest.getParameterTypes());
                 Object result = method.invoke(implClass.newInstance(), rpcRequest.getArgs());
@@ -70,5 +76,7 @@ public class TcpServerHandler implements Handler<NetSocket> {
             }
         });
         socket.handler(bufferHandlerWrapper);
+
+
     }
 }

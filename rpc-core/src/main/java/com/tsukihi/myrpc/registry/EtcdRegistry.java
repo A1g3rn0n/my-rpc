@@ -121,6 +121,7 @@ public class EtcdRegistry implements Registry{
 
         // 将键值对与租约关联起来，并设置过期时间
         PutOption putOption = PutOption.builder().withLeaseId(leaseId).build();
+        // KV 键值对，通过 put 方法将键值对存储到 Etcd 中
         kvClient.put(key, value, putOption).get();
 
         // 添加节点信息到本地缓存

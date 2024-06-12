@@ -1,33 +1,35 @@
 package com.tsukihi.myrpc.proxy;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
 import com.tsukihi.myrpc.RpcApplication;
 import com.tsukihi.myrpc.config.RpcConfig;
 import com.tsukihi.myrpc.constant.RpcConstant;
+import com.tsukihi.myrpc.fault.retry.RetryStrategy;
+import com.tsukihi.myrpc.fault.retry.RetryStrategyFactory;
+import com.tsukihi.myrpc.fault.tolerant.TolerantStrategy;
+import com.tsukihi.myrpc.fault.tolerant.TolerantStrategyFactory;
+import com.tsukihi.myrpc.loadbalancer.ConsistentHashLoadBalancer;
+import com.tsukihi.myrpc.loadbalancer.HashInputStrategy.HashInputStrategy;
+import com.tsukihi.myrpc.loadbalancer.HashInputStrategy.HashInputStrategyFactory;
+import com.tsukihi.myrpc.loadbalancer.LeastConnectionsLoadBalancer;
+import com.tsukihi.myrpc.loadbalancer.LoadBalancer;
+import com.tsukihi.myrpc.loadbalancer.LoadBalancerFactory;
 import com.tsukihi.myrpc.model.RpcRequest;
 import com.tsukihi.myrpc.model.RpcResponse;
 import com.tsukihi.myrpc.model.ServiceMetaInfo;
-import com.tsukihi.myrpc.protocol.*;
 import com.tsukihi.myrpc.registry.Registry;
 import com.tsukihi.myrpc.registry.RegistryFactory;
-import com.tsukihi.myrpc.serializer.JdkSerializer;
 import com.tsukihi.myrpc.serializer.Serializer;
 import com.tsukihi.myrpc.serializer.SerializerFactory;
 import com.tsukihi.myrpc.server.tcp.VertxTcpClient;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.NetClient;
 import lombok.extern.slf4j.Slf4j;
 
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 
 /**
  * 服务代理（JDK动态代理）
@@ -58,6 +60,7 @@ public class ServiceProxy implements InvocationHandler {
 
         log.info("method invoke: {}" , method.getName());
 
+
         String serviceName = method.getDeclaringClass().getName();
         // 构造请求
         RpcRequest rpcRequest = RpcRequest.builder()
@@ -74,33 +77,55 @@ public class ServiceProxy implements InvocationHandler {
             serviceMetaInfo.setServiceName(serviceName);
             serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
 
+            // key={{serviceName}:{serviceVersion}} 根据key在注册中心获取消费者所的目标服务提供者List
             List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
             if(CollUtil.isEmpty(serviceMetaInfoList)){
                 throw new RuntimeException("暂无服务地址");
             }
 
-            // 暂时先取第一个
-            ServiceMetaInfo selectedServiceMetaInfo = serviceMetaInfoList.get(0);
+            // 负载均衡
+            LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(rpcConfig.getLoadBalancer());
+            Map<String, Object> requestParams = new HashMap<>();
 
-            // 发送TCP请求
-            // http
-//            byte[] bodyBytes = serializer.serialize(rpcRequest);
-//            try (HttpResponse httpResponse = HttpRequest.post(selectedServiceMetaInfo.getServiceAddress())
-//                    .body(bodyBytes)
-//                    .execute()) {
-//                byte[] result = httpResponse.bodyBytes();
-//                // 反序列化
-//                RpcResponse rpcResponse = serializer.deserialize(result, RpcResponse.class);
-//                return rpcResponse.getData();
-//            }
+            // 如果配置文件指定的是一致性hash负载均衡算法
+            if(loadBalancer instanceof ConsistentHashLoadBalancer) {
+                // 获取hash输入参数
+                HashInputStrategy strategy = HashInputStrategyFactory.getInstance(rpcConfig.getHashInputStrategy());
+                // 根据不同的策略获取不同的hash输入参数
+                requestParams = strategy.getHashInput(rpcRequest);
+            }
 
-            // tcp
-            RpcResponse rpcResponse = VertxTcpClient.doRequest(rpcRequest, selectedServiceMetaInfo);
+
+            log.info("requestParams: {}", requestParams);
+
+            ServiceMetaInfo selectedServiceMetaInfo = loadBalancer.select(requestParams, serviceMetaInfoList);
+            log.info("selectedServiceMetaInfo: {}", selectedServiceMetaInfo);
+
+
+            RpcResponse rpcResponse;
+            try {
+                // 使用重试机制
+                RetryStrategy retryStrategy = RetryStrategyFactory.getInstance(rpcConfig.getRetryStrategy());
+
+                // 基于tcp的rpc请求
+                rpcResponse = retryStrategy.doRetry(() ->
+                        VertxTcpClient.doRequest(rpcRequest, selectedServiceMetaInfo)
+                );
+            } catch (Exception e){
+                // 容错机制
+                TolerantStrategy tolerantStrategy = TolerantStrategyFactory.getInstance(rpcConfig.getTolerantStrategy());
+                rpcResponse = tolerantStrategy.doTolerant(null, e);
+            }
+
+
+            // 无论服务调用是否成功，都释放服务的连接数
+            if (loadBalancer instanceof LeastConnectionsLoadBalancer) {
+                ((LeastConnectionsLoadBalancer) loadBalancer).releaseServer(selectedServiceMetaInfo);
+            }
+
             return rpcResponse.getData();
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("调用失败");
         }
-
     }
 }

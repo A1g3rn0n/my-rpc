@@ -77,4 +77,16 @@ public class ServiceMetaInfo {
         }
         return String.format("%s:%s", serviceHost, servicePort);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        ServiceMetaInfo that = (ServiceMetaInfo) obj;
+        return serviceName.equals(that.serviceName) && serviceVersion.equals(that.serviceVersion) && serviceHost.equals(that.serviceHost) && servicePort.equals(that.servicePort) && serviceGroup.equals(that.serviceGroup);
+    }
 }

@@ -41,6 +41,7 @@ public class ConfigUtils {
             configFileBuilder.append("-").append(environment);
         }
 
+        // 配置文件读取优先级：properties > yaml > yml
         String[] extensions = {".properties", ".yaml",".yml"};
 
         for (String extension : extensions) {

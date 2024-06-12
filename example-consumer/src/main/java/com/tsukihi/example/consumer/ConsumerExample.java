@@ -2,6 +2,7 @@ package com.tsukihi.example.consumer;
 
 import com.tsukihi.example.common.model.User;
 import com.tsukihi.example.common.service.UserService;
+import com.tsukihi.myrpc.bootstrap.ConsumerBootstrap;
 import com.tsukihi.myrpc.config.RpcConfig;
 import com.tsukihi.myrpc.proxy.ServiceProxyFactory;
 import com.tsukihi.myrpc.utils.ConfigUtils;
@@ -16,11 +17,15 @@ import java.lang.reflect.Method;
 public class ConsumerExample {
 
     public static void main(String[] args) {
+
+        // 服务消费者初始化
+        ConsumerBootstrap.init();
+
         /**
          * 测试mock
          */
-        // 获取代理
 
+        // 获取代理
         UserService userService = ServiceProxyFactory.getProxy(UserService.class);
         User user = new User();
         user.setName("ababa");
@@ -39,6 +44,6 @@ public class ConsumerExample {
         log.info(String.format("number: {%d}", number));
 
         short number2 = userService.getNumber();
-        log.info(String.format("number2: {%d}", number2));
+        log.debug(String.format("number2: {%d}", number2));
     }
 }

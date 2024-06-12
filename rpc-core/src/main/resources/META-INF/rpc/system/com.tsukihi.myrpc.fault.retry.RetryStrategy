@@ -1,0 +1,2 @@
+fixedInterval=com.tsukihi.myrpc.fault.retry.FixedIntervalRetryStrategy
+no=com.tsukihi.myrpc.fault.retry.NoRetryStrategy

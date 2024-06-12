@@ -1,0 +1,4 @@
+failBack=com.tsukihi.myrpc.fault.tolerant.FailBackTolerantStrategy
+failFast=com.tsukihi.myrpc.fault.tolerant.FailFastTolerantStrategy
+failOver=com.tsukihi.myrpc.fault.tolerant.FailOverTolerantStrategy
+failSafe=com.tsukihi.myrpc.fault.tolerant.FailSafeTolerantStrategy

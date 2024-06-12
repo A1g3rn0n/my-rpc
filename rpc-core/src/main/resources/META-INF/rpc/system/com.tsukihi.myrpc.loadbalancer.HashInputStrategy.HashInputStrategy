@@ -1,0 +1,2 @@
+ip=com.tsukihi.myrpc.loadbalancer.HashInputStrategy.HashInputWithIPStrategy
+methodName=com.tsukihi.myrpc.loadbalancer.HashInputStrategy.HashInputWithMethodNameStrategy

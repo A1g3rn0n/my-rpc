@@ -67,12 +67,24 @@ public class RpcApplication {
     /**
      * 获取配置
      *
+     * 双重检查锁定 单例模式实现方式
+     * 同步代码块，它使用RpcApplication.class对象作为锁。
+     * 当多个线程同时调用getRpcConfig()方法时，只有一个线程能够进入同步代码块，
+     * 执行init()方法。其他线程将在同步代码块外部等待，
+     * 直到第一个线程完成init()方法的调用并退出同步代码块，释放锁。
+     * 这样可以确保RpcApplication类的初始化过程只会被执行一次。
+     *
+     *
      * @return
      *
      */
     public static RpcConfig getRpcConfig(){
+        // 如果rpcConfig不为null，则直接返回，避免了不必要的同步
         if(rpcConfig == null){
             synchronized (RpcApplication.class){
+                // 如果rpcConfig仍然为null，则进行初始化。
+                // 这样可以确保即使有多个线程同时调用getRpcConfig()方法，
+                // RpcApplication类的初始化过程也只会被执行一次。
                 if(rpcConfig == null){
                     init();
                 }
